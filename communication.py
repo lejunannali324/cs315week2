@@ -28,3 +28,13 @@ search_field.submit()
 time.sleep(5)
 
 driver.quit()
+
+signup_form = driver.find_element(By.ID, "signup-form")
+
+email_input = signup_form.find_element(By.NAME, "email")
+password_input = signup_form.find_element(By.NAME, "password")
+
+email_input.send_keys("user@example.com")
+password_input.send_keys("MySecurePassword123")
+
+signup_form.submit()

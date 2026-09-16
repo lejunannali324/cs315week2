@@ -1,10 +1,10 @@
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 
-from bandcamp.base import WebComponent
-from bandcamp.locators import TrackListLocator
-
+from bandcamp.web.base import WebComponent, Track
+from bandcamp.web.locators import TrackListLocator, TrackLocator
 
 class TrackListElement(WebComponent):
     """Model the track list on Bandcamp's Discover page."""
@@ -46,4 +46,51 @@ class TrackListElement(WebComponent):
         return any(
             e.is_displayed() and e.text.strip()
             for e in driver.find_elements(*TrackListLocator.ITEM)
+        )
+
+    
+    
+class TrackElement(WebComponent):
+    """Model a playable track on Bandcamp's Discover page."""
+
+    def play(self) -> None:
+        """Play the track."""
+        if not self.is_playing:
+            self._get_play_button().click()
+
+    def pause(self) -> None:
+        """Pause the track."""
+        if self.is_playing:
+            self._get_play_button().click()
+
+    
+
+    @property
+    def is_playing(self) -> bool:
+        return "Pause" in self._get_play_button().get_attribute("aria-label")
+
+    def _get_play_button(self):
+        return self._parent.find_element(*TrackLocator.PLAY_BUTTON)
+
+
+
+    def _get_track_info(self) -> Track:
+        """Create a representation of the track's relevant information."""
+        full_url = self._parent.find_element(*TrackLocator.URL).get_attribute(
+            "href"
+        )
+        # Cut off the referrer query parameter
+        clean_url = full_url.split("?")[0] if full_url else ""
+
+        # Some tracks don't have a genre
+        try:
+            genre = self._parent.find_element(*TrackLocator.GENRE).text
+        except NoSuchElementException:
+            genre = ""
+
+        return Track(
+            album=self._parent.find_element(*TrackLocator.ALBUM).text,
+            artist=self._parent.find_element(*TrackLocator.ARTIST).text,
+            genre=genre,
+            url=clean_url,
         )
